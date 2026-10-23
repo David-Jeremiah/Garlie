@@ -1,0 +1,14 @@
+{% load store_tags %}
+<div class="order-card">
+  <p><span class="status status-{{ order.status }}">{{ order.get_status_display }}</span> placed {{ order.created|date:"j M Y, H:i" }}</p>
+  <ul class="mini-lines">
+    {% for item in order.items.all %}<li><span>{{ item.quantity }} &times; {{ item.product_name }} <small class="muted">{{ item.size_ml }}ml</small></span><span>{{ item.line_total|money }}</span></li>{% endfor %}
+  </ul>
+  <dl class="totals">
+    <div><dt>Subtotal</dt><dd>{{ order.subtotal|money }}</dd></div>
+    {% if order.discount %}<div><dt>Discount ({{ order.coupon_code }})</dt><dd>-{{ order.discount|money }}</dd></div>{% endif %}
+    <div><dt>Shipping</dt><dd>{% if order.shipping %}{{ order.shipping|money }}{% else %}Free{% endif %}</dd></div>
+    <div class="grand"><dt>Total</dt><dd>{{ order.total|money }}</dd></div>
+  </dl>
+  <p class="muted">Delivering to {{ order.address }}, {{ order.city }}, {{ order.country }}</p>
+</div>

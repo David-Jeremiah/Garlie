@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load store_tags %}
+{% block title %}Checkout | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow-wide">
+  <h1>Checkout</h1>
+  <div class="cart-layout">
+    <form method="post" class="form-stack" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<p class="form-error">{{ form.non_field_errors }}</p>{% endif %}
+      <fieldset>
+        <legend>Delivery details</legend>
+        {% for field in form %}{% if field.name != "payment_method" and field.name != "notes" %}
+          <div class="field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for e in field.errors %}<p class="form-error">{{ e }}</p>{% endfor %}</div>
+        {% endif %}{% endfor %}
+        <div class="field"><label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>{{ form.notes }}</div>
+      </fieldset>
+      <fieldset>
+        <legend>{{ form.payment_method.label }}</legend>
+        <div class="radio-list">{{ form.payment_method }}</div>
+        <p class="muted">You will not be charged online. We confirm every order before shipping.</p>
+      </fieldset>
+      <button class="btn btn-dark btn-block" type="submit">Place order &middot; {{ t.total|money }}</button>
+    </form>
+
+    <aside class="summary">
+      <h2>Your order</h2>
+      <ul class="mini-lines">
+        {% for line in lines %}<li><span>{{ line.qty }} &times; {{ line.product.name }} <small class="muted">{{ line.variant.size_ml }}ml</small></span><span>{{ line.total|money }}</span></li>{% endfor %}
+      </ul>
+      {% include "store/_totals.html" %}
+      <a class="text-link" href="{% url 'cart' %}">Edit bag</a>
+    </aside>
+  </div>
+</section>
+{% endblock %}

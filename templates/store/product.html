@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load store_tags %}
+{% block title %}{{ product.name }} | {{ STORE_NAME }}{% endblock %}
+{% block meta_description %}{{ product.tagline|default:product.description|truncatechars:150 }}{% endblock %}
+{% block content %}
+<section class="section product-page">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'shop' %}">Shop</a> / <a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a> / {{ product.name }}</nav>
+  <div class="product-layout">
+    <div class="product-media" style="--c: {{ product.color }}">
+      {% if product.image %}<img src="{{ product.image.url }}" alt="{{ product.name }} perfume">{% else %}{% bottle product %}{% endif %}
+    </div>
+    <div class="product-info">
+      <h1>{{ product.name }}</h1>
+      <p class="muted">{{ product.category.name }} &middot; {{ product.get_gender_display }} &middot; {{ product.concentration }}</p>
+      {% if product.rating_count %}<p class="rating"><span aria-hidden="true">{{ product.rating_avg|stars }}</span> <a href="#reviews">{{ product.rating_avg|floatformat:1 }} from {{ product.rating_count }} review{{ product.rating_count|pluralize }}</a></p>{% endif %}
+      {% if product.tagline %}<p class="lead">{{ product.tagline }}</p>{% endif %}
+
+      {% if variants %}
+      <form method="post" action="{% url 'cart_add' %}" data-cart-add data-product-form>
+        {% csrf_token %}
+        <p class="price-row"><span class="price" data-price>{% if first_available %}{{ first_available.price|money }}{% endif %}</span> <s class="old-price" data-old-price>{% if first_available.compare_at_price %}{{ first_available.compare_at_price|money }}{% endif %}</s></p>
+        <fieldset class="sizes">
+          <legend>Size</legend>
+          {% for v in variants %}
+          <label class="size {% if not v.in_stock %}is-out{% endif %}">
+            <input type="radio" name="variant" value="{{ v.pk }}" data-price="{{ v.price|money }}" data-old="{% if v.compare_at_price %}{{ v.compare_at_price|money }}{% endif %}" data-stock="{{ v.stock }}" {% if v.in_stock %}{% if v == first_available %}checked{% endif %}{% else %}disabled{% endif %}>
+            <span>{{ v.size_ml }}ml</span>
+          </label>
+          {% endfor %}
+        </fieldset>
+        <p class="stock" data-stock-text>{% if first_available %}{% if first_available.low_stock %}Only {{ first_available.stock }} left{% else %}In stock{% endif %}{% else %}Sold out{% endif %}</p>
+        <div class="buy-row">
+          <label class="sr-only" for="qty">Quantity</label>
+          <input id="qty" class="qty" type="number" name="qty" value="1" min="1" max="10" {% if not first_available %}disabled{% endif %}>
+          <button class="btn btn-dark btn-grow" type="submit" {% if not first_available %}disabled{% endif %}>{% if first_available %}Add to bag{% else %}Sold out{% endif %}</button>
+        </div>
+      </form>
+      {% else %}<p class="soldout">Currently unavailable.</p>{% endif %}
+
+      <ul class="assurances">
+        <li>Free shipping over {{ FREE_SHIPPING_THRESHOLD|money }}</li>
+        <li>Pay on delivery or by mobile money</li>
+        <li>Secure checkout, no account needed</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pyramid">
+    <h2>The notes</h2>
+    <div class="pyramid-grid">
+      <div><h3>Top</h3><p class="muted">First impression</p><p>{{ product.top_list|join:", "|default:"-" }}</p></div>
+      <div><h3>Heart</h3><p class="muted">Develops within minutes</p><p>{{ product.heart_list|join:", "|default:"-" }}</p></div>
+      <div><h3>Base</h3><p class="muted">What lingers</p><p>{{ product.base_list|join:", "|default:"-" }}</p></div>
+    </div>
+    {% if product.description %}<p class="description">{{ product.description }}</p>{% endif %}
+  </div>
+
+  <div class="reviews" id="reviews">
+    <h2>Reviews</h2>
+    <div class="reviews-layout">
+      <div>
+        {% for r in reviews %}
+        <article class="review">
+          <p class="rating" aria-label="{{ r.rating }} out of 5"><span aria-hidden="true">{{ r.rating|stars }}</span></p>
+          {% if r.title %}<h3>{{ r.title }}</h3>{% endif %}
+          <p>{{ r.body }}</p>
+          <p class="muted">{{ r.name }}, {{ r.created|date:"j M Y" }}</p>
+        </article>
+        {% empty %}<p class="muted">No reviews yet. Be the first to share how it wears.</p>{% endfor %}
+      </div>
+      <form class="review-form" method="post" action="{% url 'add_review' product.slug %}">
+        {% csrf_token %}
+        <h3>Write a review</h3>
+        {% for field in review_form %}
+          <div class="field {% if field.name == 'rating' %}field-rating{% endif %}"><label {% if field.name != 'rating' %}for="{{ field.id_for_label }}"{% endif %}>{{ field.label }}</label>{{ field }}</div>
+        {% endfor %}
+        <button class="btn btn-dark" type="submit">Post review</button>
+      </form>
+    </div>
+  </div>
+
+  {% if related %}
+  <div class="related"><h2>You may also like</h2><div class="product-grid">{% for product in related %}{% include "store/_product_card.html" %}{% endfor %}</div></div>
+  {% endif %}
+</section>
+{% endblock %}

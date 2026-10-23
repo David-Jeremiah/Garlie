@@ -1,0 +1,17 @@
+Hi {{ order.full_name }},
+
+Thank you for your order {{ order.number }}.
+
+{% for item in order.items.all %}{{ item.quantity }} x {{ item.product_name }} ({{ item.size_ml }}ml) - {{ item.line_total }}
+{% endfor %}
+Subtotal: {{ order.subtotal }}
+{% if order.discount %}Discount: -{{ order.discount }}
+{% endif %}Shipping: {{ order.shipping }}
+Total: {{ order.total }}
+
+Delivering to: {{ order.address }}, {{ order.city }}, {{ order.country }}
+Payment: {{ order.get_payment_method_display }}
+
+You can track your order any time with your order number and this email address.
+
+Garlie Perfumes

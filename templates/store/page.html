@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow prose">
+  <h1>{{ page.title }}</h1>
+  <p class="lead">{{ page.intro }}</p>
+  {% for heading, text in page.sections %}<h2>{{ heading }}</h2><p>{{ text }}</p>{% endfor %}
+</section>
+{% endblock %}

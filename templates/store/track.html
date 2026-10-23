@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Track your order | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow">
+  <h1>Track your order</h1>
+  <p class="lead">Enter the order number from your confirmation email.</p>
+  <form method="post" class="form-stack">
+    {% csrf_token %}
+    {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for e in field.errors %}<p class="form-error">{{ e }}</p>{% endfor %}</div>{% endfor %}
+    <button class="btn btn-dark" type="submit">Find my order</button>
+  </form>
+  {% if order %}<h2>Order {{ order.number }}</h2>{% include "store/_order_detail.html" %}{% endif %}
+</section>
+{% endblock %}

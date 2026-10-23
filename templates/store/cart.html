@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load store_tags %}
+{% block title %}Your bag | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow-wide">
+  <h1>Your bag</h1>
+  {% if lines %}
+  <div class="cart-layout">
+    <div>
+      {% if t.free_shipping_remaining > 0 %}
+        <p class="ship-note">Add {{ t.free_shipping_remaining|money }} more for free shipping.</p>
+      {% else %}
+        <p class="ship-note ship-ok">You have free shipping.</p>
+      {% endif %}
+      <div class="ship-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ t.free_shipping_progress }}"><span style="width: {{ t.free_shipping_progress }}%"></span></div>
+
+      <ul class="lines">
+        {% for line in lines %}
+        <li class="line">
+          <a class="line-media" href="{{ line.product.get_absolute_url }}" style="--c: {{ line.product.color }}">{% if line.product.image %}<img src="{{ line.product.image.url }}" alt="">{% else %}{% bottle line.product %}{% endif %}</a>
+          <div class="line-info">
+            <h2><a href="{{ line.product.get_absolute_url }}">{{ line.product.name }}</a></h2>
+            <p class="muted">{{ line.variant.size_ml }}ml &middot; {{ line.unit_price|money }} each</p>
+            {% if line.variant.low_stock %}<p class="stock">Only {{ line.variant.stock }} left</p>{% endif %}
+            <div class="line-actions">
+              <form method="post" action="{% url 'cart_update' %}" class="qty-form">
+                {% csrf_token %}
+                <input type="hidden" name="variant" value="{{ line.variant.pk }}">
+                <label class="sr-only" for="q{{ line.variant.pk }}">Quantity</label>
+                <input id="q{{ line.variant.pk }}" class="qty" type="number" name="qty" value="{{ line.qty }}" min="0" max="{{ line.variant.stock }}">
+                <button class="link-button" type="submit">Update</button>
+              </form>
+              <form method="post" action="{% url 'cart_remove' %}">
+                {% csrf_token %}<input type="hidden" name="variant" value="{{ line.variant.pk }}">
+                <button class="link-button" type="submit">Remove</button>
+              </form>
+            </div>
+          </div>
+          <p class="line-total">{{ line.total|money }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <aside class="summary">
+      <h2>Order summary</h2>
+      {% include "store/_totals.html" %}
+      {% if t.coupon %}
+        <form method="post" action="{% url 'cart_coupon' %}" class="coupon">{% csrf_token %}<input type="hidden" name="action" value="remove"><p>Code <strong>{{ t.coupon.code }}</strong> applied. <button class="link-button" type="submit">Remove</button></p></form>
+      {% else %}
+        <form method="post" action="{% url 'cart_coupon' %}" class="coupon">
+          {% csrf_token %}
+          <label for="code">Discount code</label>
+          <div class="inline-field"><input id="code" name="code" placeholder="{{ WELCOME_COUPON }}" autocomplete="off"><button class="btn btn-outline" type="submit">Apply</button></div>
+        </form>
+      {% endif %}
+      <a class="btn btn-dark btn-block" href="{% url 'checkout' %}">Checkout</a>
+      <a class="text-link center" href="{% url 'shop' %}">Continue shopping</a>
+    </aside>
+  </div>
+  {% else %}
+  <div class="empty"><h2>Your bag is empty</h2><p>Find a scent you love and add it here.</p><a class="btn btn-dark" href="{% url 'shop' %}">Shop fragrances</a></div>
+  {% endif %}
+</section>
+{% endblock %}

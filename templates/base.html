@@ -1,0 +1,88 @@
+{% load static store_tags %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ STORE_NAME }} | {{ STORE_TAGLINE }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Luxury fragrances with the notes listed up front. Floral, oud, fresh and oriental perfumes, delivered to your door.{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/garlie.css' %}">
+  <script src="{% static 'js/garlie.js' %}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="announce" id="announce">
+    <p>Free shipping over {{ FREE_SHIPPING_THRESHOLD|money }}. Take 10% off your first order with code <strong>{{ WELCOME_COUPON }}</strong>.</p>
+    <button type="button" class="announce-close" aria-label="Dismiss announcement" data-dismiss="announce">&times;</button>
+  </div>
+
+  <header class="site-header">
+    <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <a class="brand" href="{% url 'home' %}" aria-label="{{ STORE_NAME }} home">
+      <span class="brand-name">Garlie</span><span class="brand-sub">Perfumes</span>
+    </a>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="{% url 'shop' %}" {% if request.resolver_match.url_name == 'shop' and not request.GET.category %}aria-current="page"{% endif %}>Shop all</a>
+      {% for c in nav_categories %}<a href="{{ c.get_absolute_url }}" {% if request.GET.category == c.slug %}aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}
+      <a href="{% url 'page' 'about' %}">About</a>
+      <a href="{% url 'contact' %}">Contact</a>
+    </nav>
+    <div class="header-actions">
+      <button class="link-button" type="button" data-toggle="search-panel" aria-expanded="false" aria-controls="search-panel">Search</button>
+      <a class="bag-link" href="{% url 'cart' %}">Bag <span class="bag-count" data-cart-count>{{ cart_count }}</span></a>
+    </div>
+  </header>
+
+  <form class="search-panel" id="search-panel" action="{% url 'shop' %}" method="get" role="search" hidden>
+    <label class="sr-only" for="q">Search fragrances or notes</label>
+    <input id="q" type="search" name="q" placeholder="Try rose, oud, bergamot..." value="{{ request.GET.q }}">
+    <button class="btn btn-dark" type="submit">Search</button>
+  </form>
+
+  {% if messages %}
+  <div class="toasts" role="status" aria-live="polite">
+    {% for m in messages %}<p class="toast toast-{{ m.tags }}">{{ m }}</p>{% endfor %}
+  </div>
+  {% else %}
+  <div class="toasts" role="status" aria-live="polite"></div>
+  {% endif %}
+
+  <main id="main">{% block content %}{% endblock %}</main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="brand-name">Garlie</span>
+        <p>Fragrances with the notes listed up front, so you know what you are wearing before you buy.</p>
+      </div>
+      <div>
+        <h2>Shop</h2>
+        <a href="{% url 'shop' %}">All perfumes</a>
+        {% for c in nav_categories %}<a href="{{ c.get_absolute_url }}">{{ c.name }}</a>{% endfor %}
+      </div>
+      <div>
+        <h2>Help</h2>
+        <a href="{% url 'track' %}">Track your order</a>
+        <a href="{% url 'page' 'shipping' %}">Shipping and delivery</a>
+        <a href="{% url 'page' 'returns' %}">Returns and exchanges</a>
+        <a href="{% url 'page' 'faq' %}">FAQ</a>
+        <a href="{% url 'contact' %}">Contact us</a>
+      </div>
+      <form class="footer-news" action="{% url 'newsletter' %}" method="post" data-newsletter>
+        {% csrf_token %}
+        <h2>Get 10% off your first order</h2>
+        <p>New arrivals and scent stories. Use code {{ WELCOME_COUPON }} at checkout.</p>
+        <label class="sr-only" for="news-email">Email address</label>
+        <div class="inline-field">
+          <input id="news-email" type="email" name="email" placeholder="you@example.com" required>
+          <button class="btn btn-gold" type="submit">Subscribe</button>
+        </div>
+      </form>
+    </div>
+    <p class="copyright">&copy; {% now "Y" %} {{ STORE_NAME }}. All rights reserved.</p>
+  </footer>
+</body>
+</html>

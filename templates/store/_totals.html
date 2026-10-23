@@ -1,0 +1,7 @@
+{% load store_tags %}
+<dl class="totals">
+  <div><dt>Subtotal</dt><dd>{{ t.subtotal|money }}</dd></div>
+  {% if t.discount %}<div><dt>Discount ({{ t.coupon.code }})</dt><dd>-{{ t.discount|money }}</dd></div>{% endif %}
+  <div><dt>Shipping</dt><dd>{% if t.shipping %}{{ t.shipping|money }}{% else %}Free{% endif %}</dd></div>
+  <div class="grand"><dt>Total</dt><dd>{{ t.total|money }}</dd></div>
+</dl>

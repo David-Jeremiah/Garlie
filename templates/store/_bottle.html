@@ -1,0 +1,28 @@
+{% load store_tags %}
+<svg class="bottle{% if animate %} bottle-animate{% endif %}" viewBox="0 0 200 280" style="--c: {{ product.color }}" role="img" aria-label="{{ product.name }} bottle" xmlns="http://www.w3.org/2000/svg">
+  {% if product.bottle_shape == "tall" %}
+    <rect class="b-cap" x="82" y="8" width="36" height="52" rx="3"/>
+    <rect class="b-neck" x="91" y="60" width="18" height="14"/>
+    <rect class="b-glass" x="56" y="72" width="88" height="192" rx="10"/>
+    <rect class="liquid" x="61" y="100" width="78" height="159" rx="7"/>
+    <rect class="b-label" x="75" y="150" width="50" height="72" rx="2"/>
+    <rect class="b-shine" x="66" y="82" width="7" height="172" rx="3.5"/>
+    <text class="b-mark" x="100" y="196" text-anchor="middle">{{ product.name|initial }}</text>
+  {% elif product.bottle_shape == "round" %}
+    <rect class="b-cap" x="76" y="10" width="48" height="40" rx="20"/>
+    <rect class="b-neck" x="88" y="50" width="24" height="26"/>
+    <rect class="b-glass" x="30" y="72" width="140" height="190" rx="70"/>
+    <rect class="liquid" x="36" y="110" width="128" height="146" rx="64"/>
+    <rect class="b-label" x="68" y="150" width="64" height="66" rx="32"/>
+    <rect class="b-shine" x="46" y="108" width="7" height="110" rx="3.5"/>
+    <text class="b-mark" x="100" y="193" text-anchor="middle">{{ product.name|initial }}</text>
+  {% else %}
+    <rect class="b-cap" x="78" y="8" width="44" height="48" rx="3"/>
+    <rect class="b-neck" x="88" y="56" width="24" height="16"/>
+    <rect class="b-glass" x="38" y="72" width="124" height="192" rx="14"/>
+    <rect class="liquid" x="44" y="100" width="112" height="158" rx="10"/>
+    <rect class="b-label" x="68" y="150" width="64" height="72" rx="2"/>
+    <rect class="b-shine" x="50" y="84" width="8" height="170" rx="4"/>
+    <text class="b-mark" x="100" y="196" text-anchor="middle">{{ product.name|initial }}</text>
+  {% endif %}
+</svg>

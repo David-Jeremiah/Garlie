@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load store_tags %}
+{% block title %}Order {{ order.number }} | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow">
+  <h1>Thank you, {{ order.full_name|truncatewords:1 }}</h1>
+  <p class="lead">Your order <strong>{{ order.number }}</strong> is placed. We sent a confirmation to {{ order.email }}.</p>
+  {% include "store/_order_detail.html" %}
+  <p>{% if order.payment_method == "momo" %}We will call {{ order.phone }} to confirm your mobile money payment before shipping.{% else %}Pay the courier when your order arrives.{% endif %}</p>
+  <a class="btn btn-dark" href="{% url 'shop' %}">Keep shopping</a>
+</section>
+{% endblock %}

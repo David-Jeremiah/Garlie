@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load store_tags %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>Elegance in every note</h1>
+    <p class="lead">Luxury fragrances with the top, heart and base notes listed up front, so you can choose by what they smell like.</p>
+    <div class="hero-actions">
+      <a class="btn btn-dark" href="{% url 'shop' %}">Shop all fragrances</a>
+      {% if featured %}<a class="btn btn-outline" href="{{ featured.get_absolute_url }}">Meet {{ featured.name }}</a>{% endif %}
+    </div>
+    <ul class="hero-points">
+      <li><strong>Premium quality</strong><span>Finest ingredients</span></li>
+      <li><strong>Long lasting</strong><span>Fragrance that stays</span></li>
+      <li><strong>Made for gifting</strong><span>Perfect for every occasion</span></li>
+    </ul>
+  </div>
+  {% if featured %}
+  <a class="hero-stage" href="{{ featured.get_absolute_url }}" style="--c: {{ featured.color }}" aria-label="{{ featured.name }}">
+    {% bottle featured animate=True %}
+    <dl class="hero-notes">
+      {% if featured.top_list %}<div><dt>Top</dt><dd>{{ featured.top_list|join:", " }}</dd></div>{% endif %}
+      {% if featured.heart_list %}<div><dt>Heart</dt><dd>{{ featured.heart_list|join:", " }}</dd></div>{% endif %}
+      {% if featured.base_list %}<div><dt>Base</dt><dd>{{ featured.base_list|join:", " }}</dd></div>{% endif %}
+    </dl>
+    <p class="hero-name">{{ featured.name }}<span>{{ featured.category.name }}</span></p>
+  </a>
+  {% endif %}
+</section>
+
+<section class="benefits" aria-label="Shopping benefits">
+  <p><strong>Free shipping</strong> on orders over {{ FREE_SHIPPING_THRESHOLD|money }}</p>
+  <p><strong>Easy returns</strong> see our returns policy</p>
+  <p><strong>Pay your way</strong> on delivery or mobile money</p>
+  <p><strong>Real support</strong> <a href="{% url 'contact' %}">talk to us</a></p>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Find your signature scent</h2>
+    <a class="text-link" href="{% url 'shop' %}">View all fragrances</a>
+  </div>
+  <div class="family-grid">
+    {% for c in categories %}
+    <a class="family" href="{{ c.get_absolute_url }}" style="--c: {{ c.color }}">
+      <h3>{{ c.name }}</h3>
+      <p>{{ c.tagline }}</p>
+      <span>{{ c.n }} fragrance{{ c.n|pluralize }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% if bestsellers %}
+<section class="section section-dark">
+  <div class="section-head">
+    <div><h2>Customer favorites</h2><p class="muted-on-dark">Loved by the people who wear them.</p></div>
+    <a class="text-link" href="{% url 'shop' %}?sort=rating">Shop top rated</a>
+  </div>
+  <div class="product-grid">{% for product in bestsellers %}{% include "store/_product_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if new_arrivals %}
+<section class="section">
+  <div class="section-head"><h2>New arrivals</h2><a class="text-link" href="{% url 'shop' %}?sort=newest">See what is new</a></div>
+  <div class="product-grid">{% for product in new_arrivals %}{% include "store/_product_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+<section class="promise">
+  <h2>Choose by note, not by guesswork</h2>
+  <p>Every fragrance shows what it opens with, what it settles into and what lingers on skin. Start with a scent family you already love and go from there.</p>
+</section>
+
+<section class="newsletter">
+  <div><h2>Be the first to know</h2><p>New arrivals and scent stories, plus 10% off your first order with code {{ WELCOME_COUPON }}.</p></div>
+  <form action="{% url 'newsletter' %}" method="post" data-newsletter>
+    {% csrf_token %}
+    <label class="sr-only" for="home-news">Email address</label>
+    <div class="inline-field">
+      <input id="home-news" type="email" name="email" placeholder="Enter your email address" required>
+      <button class="btn btn-gold" type="submit">Subscribe</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
