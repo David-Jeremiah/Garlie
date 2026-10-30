@@ -1,6 +1,37 @@
 from django.contrib import admin
 
-from .models import Category, ContactMessage, Coupon, Order, OrderItem, Product, Review, Subscriber, Variant
+from .models import (
+    Category,
+    ContactMessage,
+    Coupon,
+    Order,
+    OrderItem,
+    Product,
+    Review,
+    SiteSettings,
+    Subscriber,
+    Variant,
+)
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    fields = ("store_name", "tagline", "free_shipping_threshold", "welcome_coupon", "whatsapp_number")
+
+    def has_add_permission(self, request):
+        # Only one row ever exists.
+        return not SiteSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Skip the list page and go straight to the single settings row.
+        from django.shortcuts import redirect
+        from django.urls import reverse
+
+        obj = SiteSettings.load()
+        return redirect(reverse("admin:store_sitesettings_change", args=[obj.pk]))
 
 
 @admin.register(Category)

@@ -18,9 +18,9 @@
       <fieldset>
         <legend>{{ form.payment_method.label }}</legend>
         <div class="radio-list">{{ form.payment_method }}</div>
-        <p class="muted">You will not be charged online. We confirm every order before shipping.</p>
+        <p class="muted">You will not be charged online. {% if WHATSAPP_NUMBER %}Your order opens in WhatsApp, so tap Send to confirm it with us.{% else %}We confirm every order before shipping.{% endif %}</p>
       </fieldset>
-      <button class="btn btn-dark btn-block" type="submit">Place order &middot; {{ t.total|money }}</button>
+      <button class="btn btn-dark btn-block" type="submit">{% if WHATSAPP_NUMBER %}Order on WhatsApp{% else %}Place order{% endif %} &middot; {{ t.total|money }}</button>
     </form>
 
     <aside class="summary">

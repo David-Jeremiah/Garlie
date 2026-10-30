@@ -22,7 +22,7 @@
   <header class="site-header">
     <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <a class="brand" href="{% url 'home' %}" aria-label="{{ STORE_NAME }} home">
-      <span class="brand-name">Garlie</span><span class="brand-sub">Perfumes</span>
+      <span class="brand-name">{{ STORE_NAME }}</span><span class="brand-sub">Perfumes</span>
     </a>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="{% url 'shop' %}" {% if request.resolver_match.url_name == 'shop' and not request.GET.category %}aria-current="page"{% endif %}>Shop all</a>
@@ -55,7 +55,7 @@
   <footer class="site-footer">
     <div class="footer-grid">
       <div class="footer-brand">
-        <span class="brand-name">Garlie</span>
+         <span class="brand-name">{{ STORE_NAME }} PERFUMES</span>
         <p>Fragrances with the notes listed up front, so you know what you are wearing before you buy.</p>
       </div>
       <div>
@@ -82,7 +82,7 @@
         </div>
       </form>
     </div>
-    <p class="copyright">&copy; {% now "Y" %} {{ STORE_NAME }}. All rights reserved.</p>
+   <p class="copyright">&copy; {% now "Y" %} {{ STORE_NAME }}&nbsp;<span>Perfume</span>. All rights reserved.</p>
   </footer>
 </body>
 </html>

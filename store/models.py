@@ -1,11 +1,87 @@
+import re
 import secrets
 import string
 from decimal import Decimal
+from urllib.parse import quote
 
+from django.conf import settings
+from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+
+SITE_SETTINGS_CACHE_KEY = "site_settings"
+
+
+def _fmt(value):
+    """12000.00 -> 12,000 and 12.50 -> 12.5"""
+    text = f"{value:,.2f}"
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+class SiteSettings(models.Model):
+    """Single-row table holding store-wide settings editable from the admin."""
+
+    store_name = models.CharField(max_length=80, default="Garlie")
+    tagline = models.CharField(max_length=160, blank=True)
+    free_shipping_threshold = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text="Orders above this get free shipping"
+    )
+    welcome_coupon = models.CharField(
+        max_length=40, blank=True, help_text="Code shown in the banner and footer. Create it under Coupons too."
+    )
+    whatsapp_number = models.CharField(
+        max_length=20,
+        blank=True,
+        default="256774156366",
+        help_text="Orders are sent to this WhatsApp number. Use the country code, e.g. 256774156366 "
+        "(0774156366 also works). Leave empty to turn WhatsApp checkout off.",
+    )
+
+    class Meta:
+        verbose_name = "Site settings"
+        verbose_name_plural = "Site settings"
+
+    def __str__(self):
+        return "Site settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # enforce a single row
+        super().save(*args, **kwargs)
+        cache.delete(SITE_SETTINGS_CACHE_KEY)
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cache.delete(SITE_SETTINGS_CACHE_KEY)
+
+    @property
+    def whatsapp_link_number(self):
+        """Digits only, with country code, ready for https://wa.me/<number>."""
+        digits = re.sub(r"\D", "", self.whatsapp_number or "")
+        if digits.startswith("00"):
+            digits = digits[2:]
+        elif digits.startswith("0"):
+            digits = "256" + digits[1:]  # Uganda local format
+        return digits
+
+    @classmethod
+    def load(cls):
+        obj = cache.get(SITE_SETTINGS_CACHE_KEY)
+        if obj is None:
+            # First run: seed the row from the old values in settings.py (if present).
+            obj, _ = cls.objects.get_or_create(
+                pk=1,
+                defaults={
+                    "store_name": getattr(settings, "STORE_NAME", "Garlie"),
+                    "tagline": getattr(settings, "STORE_TAGLINE", ""),
+                    "free_shipping_threshold": Decimal(str(getattr(settings, "FREE_SHIPPING_THRESHOLD", 0))),
+                    "welcome_coupon": getattr(settings, "WELCOME_COUPON", ""),
+                    "whatsapp_number": getattr(settings, "WHATSAPP_NUMBER", "256774156366"),
+                },
+            )
+            cache.set(SITE_SETTINGS_CACHE_KEY, obj, 300)
+        return obj
 
 
 class Category(models.Model):
@@ -213,6 +289,35 @@ class Order(models.Model):
                 number = _order_number()
             self.number = number
         super().save(*args, **kwargs)
+
+    @property
+    def whatsapp_url(self):
+        """wa.me link with this order pre-filled, or "" if no WhatsApp number is set."""
+        number = SiteSettings.load().whatsapp_link_number
+        if not number:
+            return ""
+        sym = getattr(settings, "STORE_CURRENCY_SYMBOL", "")
+        lines = [
+            f"*New order {self.number}*",
+            "",
+            f"Name: {self.full_name}",
+            f"Phone: {self.phone}",
+            f"Email: {self.email}",
+            f"Address: {self.address}, {self.city}, {self.country}",
+            f"Payment: {self.get_payment_method_display()}",
+        ]
+        if self.notes:
+            lines.append(f"Notes: {self.notes}")
+        lines += ["", "*Items*"]
+        for item in self.items.all():
+            lines.append(f"- {item.quantity} x {item.product_name} {item.size_ml}ml = {sym}{_fmt(item.line_total)}")
+        lines.append("")
+        if self.discount:
+            lines.append(f"Discount: -{sym}{_fmt(self.discount)}")
+        if self.shipping:
+            lines.append(f"Shipping: {sym}{_fmt(self.shipping)}")
+        lines.append(f"*Total: {sym}{_fmt(self.total)}*")
+        return f"https://wa.me/{number}?text={quote(chr(10).join(lines), safe='')}"
 
 
 class OrderItem(models.Model):

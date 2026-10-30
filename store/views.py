@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 
 from .cart import Cart
 from .forms import CheckoutForm, ContactForm, NewsletterForm, ReviewForm, TrackForm
-from .models import Category, Order, Product, Subscriber, Variant
+from .models import Category, Order, Product, SiteSettings, Subscriber, Variant
 from .services import StockError, create_order, send_order_email
 
 
@@ -141,7 +141,11 @@ def cart_detail(request):
 @require_POST
 def cart_add(request):
     cart = Cart(request)
-    variant = get_object_or_404(Variant.objects.select_related("product"), pk=request.POST.get("variant"), product__is_active=True)
+    variant = get_object_or_404(
+        Variant.objects.select_related("product"),
+        pk=request.POST.get("variant"),
+        product__is_active=True,
+    )
     try:
         qty = max(1, int(request.POST.get("qty", 1)))
     except ValueError:
@@ -204,6 +208,9 @@ def checkout(request):
         recent = request.session.get("recent_orders", [])
         request.session["recent_orders"] = recent + [order.number]
         send_order_email(order)
+        wa_url = order.whatsapp_url
+        if wa_url:
+            return redirect(wa_url)  # opens WhatsApp with the order pre-filled
         return redirect("order_success", number=order.number)
     return render(request, "store/checkout.html", {"form": form, "lines": cart.lines(), "t": cart.totals()})
 
@@ -236,11 +243,13 @@ def newsletter(request):
     form = NewsletterForm(request.POST)
     if form.is_valid():
         _, created = Subscriber.objects.get_or_create(email=form.cleaned_data["email"].lower())
-        message = (
-            f"You are subscribed. Use {settings.WELCOME_COUPON} for 10% off your first order."
-            if created
-            else "You are already on the list."
-        )
+        coupon = SiteSettings.load().welcome_coupon
+        if not created:
+            message = "You are already on the list."
+        elif coupon:
+            message = f"You are subscribed. Use {coupon} for 10% off your first order."
+        else:
+            message = "You are subscribed. Thank you."
         ok = True
     else:
         message, ok = "Please enter a valid email address.", False
@@ -263,7 +272,7 @@ PAGES = {
         "title": "Shipping and delivery",
         "intro": "Orders over the free-shipping amount ship free.",
         "sections": [
-            ("Rates", f"Free shipping on orders over {settings.STORE_CURRENCY_SYMBOL}{settings.FREE_SHIPPING_THRESHOLD}. Otherwise a flat {settings.STORE_CURRENCY_SYMBOL}{settings.FLAT_SHIPPING}."),
+            ("Rates", ""),  # filled in from Site settings in page()
             ("Delivery times", "Add your delivery times and areas here."),
             ("Tracking", "Use Track your order with your order number and email to see the latest status."),
         ],
@@ -292,6 +301,14 @@ def page(request, slug):
     data = PAGES.get(slug)
     if not data:
         raise Http404
+    if slug == "shipping":
+        site = SiteSettings.load()
+        sym = settings.STORE_CURRENCY_SYMBOL
+        rates = (
+            f"Free shipping on orders over {sym}{site.free_shipping_threshold:,.0f}. "
+            f"Otherwise a flat {sym}{settings.FLAT_SHIPPING}."
+        )
+        data = {**data, "sections": [("Rates", rates), *data["sections"][1:]]}
     return render(request, "store/page.html", {"page": data})
 
 

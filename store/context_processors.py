@@ -1,16 +1,16 @@
-from django.conf import settings
-
 from .cart import Cart
-from .models import Category
+from .models import Category, SiteSettings
 
 
 def store(request):
     cart = Cart(request)
+    site = SiteSettings.load()
     return {
-        "STORE_NAME": settings.STORE_NAME,
-        "STORE_TAGLINE": settings.STORE_TAGLINE,
-        "FREE_SHIPPING_THRESHOLD": settings.FREE_SHIPPING_THRESHOLD,
-        "WELCOME_COUPON": settings.WELCOME_COUPON,
+        "STORE_NAME": site.store_name,
+        "STORE_TAGLINE": site.tagline,
+        "FREE_SHIPPING_THRESHOLD": site.free_shipping_threshold,
+        "WELCOME_COUPON": site.welcome_coupon,
+        "WHATSAPP_NUMBER": site.whatsapp_link_number,
         "nav_categories": Category.objects.all(),
         "cart_count": len(cart),
     }
