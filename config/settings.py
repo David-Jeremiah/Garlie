@@ -77,8 +77,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Order emails print to the terminal in development. Swap for SMTP in production.
-EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_FROM_EMAIL", "Garlie Perfumes <orders@garlie.example>")
+# To send real emails set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD (see README, "Emails").
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_BACKEND = os.environ.get(
+    "DJANGO_EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST_USER else "django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_FROM_EMAIL", f"Mr. Garil <{EMAIL_HOST_USER or 'orders@mrgaril.example'}>")
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
@@ -86,12 +95,16 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SSL_REDIRECT", "1") == "1"
 
 # --- Store settings (edit these) ---------------------------------------------
-STORE_NAME = "Garlie Perfumes"
-STORE_TAGLINE = "Scent your story"
+STORE_NAME = "Mr. Garil"
+STORE_TAGLINE = "Whisper of Luxury"
 STORE_CURRENCY_SYMBOL = "UGX"
 STORE_CURRENCY_DECIMALS = 0
 FREE_SHIPPING_THRESHOLD = 100000
 FLAT_SHIPPING = 20000
 MAX_QTY_PER_LINE = 10
 WELCOME_COUPON = "WELCOME10"
-WHATSAPP_NUMBER = "256774156366"
+WHATSAPP_NUMBER = "256768633991"
+
+LOGIN_URL = "account_login"
+LOGIN_REDIRECT_URL = "account"
+LOGOUT_REDIRECT_URL = "home"

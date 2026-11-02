@@ -2,8 +2,9 @@
 {% block title %}{{ page.title }} | {{ STORE_NAME }}{% endblock %}
 {% block content %}
 <section class="section narrow prose">
+  {% if page.image_url %}<img class="page-image" src="{{ page.image_url }}" alt="{{ page.title }}">{% endif %}
   <h1>{{ page.title }}</h1>
-  <p class="lead">{{ page.intro }}</p>
-  {% for heading, text in page.sections %}<h2>{{ heading }}</h2><p>{{ text }}</p>{% endfor %}
+  {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  {% for heading, paras in page.sections %}{% if heading %}<h2>{{ heading }}</h2>{% endif %}{% for para in paras %}<p>{{ para|linebreaksbr }}</p>{% endfor %}{% endfor %}
 </section>
 {% endblock %}

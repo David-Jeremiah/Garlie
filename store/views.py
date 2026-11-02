@@ -1,5 +1,8 @@
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import login, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Min, Q
 from django.http import Http404, JsonResponse
@@ -7,9 +10,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .cart import Cart
-from .forms import CheckoutForm, ContactForm, NewsletterForm, ReviewForm, TrackForm
-from .models import Category, Order, Product, SiteSettings, Subscriber, Variant
-from .services import StockError, create_order, send_order_email
+from .forms import CheckoutForm, ContactForm, NewsletterForm, ProfileForm, ReviewForm, SignupForm, TrackForm
+from .models import Category, Order, Page, Product, Profile, SiteSettings, Subscriber, Variant
+from .services import StockError, create_order, send_contact_email, send_order_email
 
 
 def products_qs():
@@ -37,6 +40,7 @@ def home(request):
         "featured": bestsellers[0] if bestsellers else qs.first(),
         "categories": Category.objects.annotate(n=Count("products", filter=Q(products__is_active=True))),
         "bestsellers": bestsellers,
+        "all_products": qs.order_by("-is_bestseller", "-created"),
         "new_arrivals": qs.filter(is_new=True)[:4],
     }
     return render(request, "store/home.html", context)
@@ -197,8 +201,17 @@ def checkout(request):
         messages.info(request, "Your bag is empty. Add a fragrance to check out.")
         return redirect("shop")
 
-    form = CheckoutForm(request.POST or None)
+    initial = {}
+    if request.user.is_authenticated:
+        prof, _ = Profile.objects.get_or_create(user=request.user)
+        initial = {
+            "full_name": request.user.first_name, "email": request.user.email, "phone": prof.phone,
+            "address": prof.address, "city": prof.city, "country": prof.country,
+        }
+    form = CheckoutForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
+        if request.user.is_authenticated:
+            form.instance.user = request.user
         try:
             order = create_order(cart, form)
         except StockError as exc:
@@ -298,24 +311,71 @@ PAGES = {
 
 
 def page(request, slug):
+    obj = Page.objects.filter(slug=slug).first()
+    if obj:
+        sections = obj.sections()
+        if slug == "shipping":
+            site = SiteSettings.load()
+            sym = settings.STORE_CURRENCY_SYMBOL
+            rates = (
+                f"Free shipping on orders over {sym}{site.free_shipping_threshold:,.0f}. "
+                f"Otherwise a flat {sym}{settings.FLAT_SHIPPING}."
+            )
+            sections = [(h, [p.replace("{rates}", rates) for p in ps]) for h, ps in sections]
+        data = {"title": obj.title, "intro": obj.intro, "sections": sections, "image_url": obj.image_url}
+        return render(request, "store/page.html", {"page": data})
     data = PAGES.get(slug)
     if not data:
         raise Http404
-    if slug == "shipping":
-        site = SiteSettings.load()
-        sym = settings.STORE_CURRENCY_SYMBOL
-        rates = (
-            f"Free shipping on orders over {sym}{site.free_shipping_threshold:,.0f}. "
-            f"Otherwise a flat {sym}{settings.FLAT_SHIPPING}."
-        )
-        data = {**data, "sections": [("Rates", rates), *data["sections"][1:]]}
+    data = {**data, "sections": [(h, [t]) for h, t in data["sections"]], "image_url": ""}
     return render(request, "store/page.html", {"page": data})
 
 
 def contact(request):
     form = ContactForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        send_contact_email(form.save())
         messages.success(request, "Thanks, we have your message and will reply by email.")
         return redirect("contact")
     return render(request, "store/contact.html", {"form": form})
+
+# --- Customer accounts -------------------------------------------------------
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect("account")
+    form = SignupForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        login(request, user)
+        messages.success(request, "Welcome! Your account is ready.")
+        return redirect(request.POST.get("next") or "account")
+    return render(request, "store/account/signup.html", {"form": form, "next": request.GET.get("next", "")})
+
+
+@login_required
+def account(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    form = ProfileForm(request.POST or None, request.FILES or None, instance=profile)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Your profile was updated.")
+        return redirect("account")
+    orders = request.user.orders.prefetch_related("items")[:20]
+    return render(request, "store/account/account.html", {"form": form, "orders": orders, "profile": profile})
+
+
+@login_required
+def account_order(request, number):
+    order = get_object_or_404(request.user.orders.prefetch_related("items"), number=number)
+    return render(request, "store/account/order.html", {"order": order})
+
+
+@login_required
+def password_change(request):
+    form = PasswordChangeForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, "Your password was changed.")
+        return redirect("account")
+    return render(request, "store/account/password.html", {"form": form})

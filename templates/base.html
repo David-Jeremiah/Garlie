@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ SITE.favicon_url }}">
+  <link rel="apple-touch-icon" href="{{ SITE.favicon_url }}">
   <link rel="stylesheet" href="{% static 'css/garlie.css' %}">
   <script src="{% static 'js/garlie.js' %}" defer></script>
 </head>
@@ -15,14 +17,14 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <div class="announce" id="announce">
-    <p>Free shipping over {{ FREE_SHIPPING_THRESHOLD|money }}. Take 10% off your first order with code <strong>{{ WELCOME_COUPON }}</strong>.</p>
+    {% if SITE.announcement_text %}<p>{{ SITE.announcement_text }}</p>{% else %}<p>Free shipping over {{ FREE_SHIPPING_THRESHOLD|money }}. Take 10% off your first order with code <strong>{{ WELCOME_COUPON }}</strong>.</p>{% endif %}
     <button type="button" class="announce-close" aria-label="Dismiss announcement" data-dismiss="announce">&times;</button>
   </div>
 
   <header class="site-header">
     <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <a class="brand" href="{% url 'home' %}" aria-label="{{ STORE_NAME }} home">
-      <span class="brand-name">{{ STORE_NAME }}</span><span class="brand-sub">Perfumes</span>
+      <img class="brand-logo" src="{{ SITE.emblem_url }}" alt="{{ STORE_NAME }} logo"><span class="brand-text"><span class="brand-name">{{ STORE_NAME }}</span><span class="brand-sub">Perfumes</span></span>
     </a>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="{% url 'shop' %}" {% if request.resolver_match.url_name == 'shop' and not request.GET.category %}aria-current="page"{% endif %}>Shop all</a>
@@ -32,6 +34,7 @@
     </nav>
     <div class="header-actions">
       <button class="link-button" type="button" data-toggle="search-panel" aria-expanded="false" aria-controls="search-panel">Search</button>
+      {% if user.is_authenticated %}<a class="link-button" href="{% url 'account' %}">Account</a>{% else %}<a class="link-button" href="{% url 'account_login' %}">Log in</a>{% endif %}
       <a class="bag-link" href="{% url 'cart' %}">Bag <span class="bag-count" data-cart-count>{{ cart_count }}</span></a>
     </div>
   </header>
@@ -55,8 +58,9 @@
   <footer class="site-footer">
     <div class="footer-grid">
       <div class="footer-brand">
-         <span class="brand-name">{{ STORE_NAME }} PERFUMES</span>
-        <p>Fragrances with the notes listed up front, so you know what you are wearing before you buy.</p>
+<img class="footer-logo" src="{{ SITE.logo_url }}" alt="{{ STORE_NAME }} logo">
+        <p>{{ SITE.footer_text }}</p>
+        <p class="footer-contact">{% if SITE.phone %}Call/WhatsApp: {{ SITE.phone }}<br>{% endif %}{% if SITE.email %}{{ SITE.email }}<br>{% endif %}{% if SITE.location %}{{ SITE.location }}{% endif %}{% if SITE.delivery_text %} &middot; {{ SITE.delivery_text }}{% endif %}</p>
       </div>
       <div>
         <h2>Shop</h2>
@@ -65,6 +69,7 @@
       </div>
       <div>
         <h2>Help</h2>
+        <a href="{% url 'account' %}">My account</a>
         <a href="{% url 'track' %}">Track your order</a>
         <a href="{% url 'page' 'shipping' %}">Shipping and delivery</a>
         <a href="{% url 'page' 'returns' %}">Returns and exchanges</a>

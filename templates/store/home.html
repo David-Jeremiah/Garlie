@@ -1,72 +1,41 @@
 {% extends "base.html" %}
 {% load store_tags %}
 {% block content %}
-<section class="hero">
-  <div class="hero-copy">
-    <h1>Elegance in every note</h1>
-    <p class="lead">Luxury fragrances with the top, heart and base notes listed up front, so you can choose by what they smell like.</p>
-    <div class="hero-actions">
-      <a class="btn btn-dark" href="{% url 'shop' %}">Shop all fragrances</a>
-      {% if featured %}<a class="btn btn-outline" href="{{ featured.get_absolute_url }}">Meet {{ featured.name }}</a>{% endif %}
+<section class="front">
+  <div class="front-inner">
+    <div class="front-copy">
+      <img class="front-logo" src="{{ SITE.logo_url }}" alt="{{ STORE_NAME }} logo">
+      <h1>{{ SITE.hero_title }}</h1>
+      <p class="lead">{{ SITE.hero_text }}</p>
+      <p class="whisper-meta">{% if SITE.location %}{{ SITE.location }}{% endif %}{% if SITE.delivery_text %} &middot; {{ SITE.delivery_text }}{% endif %}</p>
+      <div class="hero-actions">
+        <a class="btn btn-dark" href="#display">{{ SITE.hero_button_text }}</a>
+        <a class="btn btn-outline" href="{% url 'page' 'about' %}">About us</a>
+      </div>
     </div>
-    <ul class="hero-points">
-      <li><strong>Premium quality</strong><span>Finest ingredients</span></li>
-      <li><strong>Long lasting</strong><span>Fragrance that stays</span></li>
-      <li><strong>Made for gifting</strong><span>Perfect for every occasion</span></li>
-    </ul>
+    <div class="front-photo"><img src="{{ SITE.hero_image_url }}" alt="A collection of {{ STORE_NAME }} perfumes"></div>
   </div>
-  {% if featured %}
-  <a class="hero-stage" href="{{ featured.get_absolute_url }}" style="--c: {{ featured.color }}" aria-label="{{ featured.name }}">
-    {% bottle featured animate=True %}
-    <dl class="hero-notes">
-      {% if featured.top_list %}<div><dt>Top</dt><dd>{{ featured.top_list|join:", " }}</dd></div>{% endif %}
-      {% if featured.heart_list %}<div><dt>Heart</dt><dd>{{ featured.heart_list|join:", " }}</dd></div>{% endif %}
-      {% if featured.base_list %}<div><dt>Base</dt><dd>{{ featured.base_list|join:", " }}</dd></div>{% endif %}
-    </dl>
-    <p class="hero-name">{{ featured.name }}<span>{{ featured.category.name }}</span></p>
-  </a>
-  {% endif %}
+</section>
+
+<section class="section display" id="display">
+  <div class="section-head"><div><h2>{{ SITE.display_title }}</h2>{% if SITE.display_text %}<p class="muted">{{ SITE.display_text }}</p>{% endif %}</div></div>
+  <div class="display-bar">
+    <div class="chips" role="tablist" aria-label="Filter by scent family">
+      <button type="button" class="chip is-on" data-filter="all">All</button>
+      {% for c in categories %}<button type="button" class="chip" data-filter="{{ c.slug }}">{{ c.name }}</button>{% endfor %}
+    </div>
+    <input class="display-search" type="search" placeholder="Search perfumes..." aria-label="Search perfumes" data-display-search>
+  </div>
+  <div class="product-grid" data-display-grid>{% for product in all_products %}{% include "store/_product_card.html" %}{% endfor %}</div>
+  <p class="muted center" data-display-empty hidden>No perfumes match that search.</p>
 </section>
 
 <section class="benefits" aria-label="Shopping benefits">
-  <p><strong>Free shipping</strong> on orders over {{ FREE_SHIPPING_THRESHOLD|money }}</p>
-  <p><strong>Easy returns</strong> see our returns policy</p>
+  <p><strong>Authentic fragrances</strong> international scents</p>
+  <p><strong>Delivery</strong> {{ SITE.delivery_text }}</p>
   <p><strong>Pay your way</strong> on delivery or mobile money</p>
   <p><strong>Real support</strong> <a href="{% url 'contact' %}">talk to us</a></p>
 </section>
-
-<section class="section">
-  <div class="section-head">
-    <h2>Find your signature scent</h2>
-    <a class="text-link" href="{% url 'shop' %}">View all fragrances</a>
-  </div>
-  <div class="family-grid">
-    {% for c in categories %}
-    <a class="family" href="{{ c.get_absolute_url }}" style="--c: {{ c.color }}">
-      <h3>{{ c.name }}</h3>
-      <p>{{ c.tagline }}</p>
-      <span>{{ c.n }} fragrance{{ c.n|pluralize }}</span>
-    </a>
-    {% endfor %}
-  </div>
-</section>
-
-{% if bestsellers %}
-<section class="section section-dark">
-  <div class="section-head">
-    <div><h2>Customer favorites</h2><p class="muted-on-dark">Loved by the people who wear them.</p></div>
-    <a class="text-link" href="{% url 'shop' %}?sort=rating">Shop top rated</a>
-  </div>
-  <div class="product-grid">{% for product in bestsellers %}{% include "store/_product_card.html" %}{% endfor %}</div>
-</section>
-{% endif %}
-
-{% if new_arrivals %}
-<section class="section">
-  <div class="section-head"><h2>New arrivals</h2><a class="text-link" href="{% url 'shop' %}?sort=newest">See what is new</a></div>
-  <div class="product-grid">{% for product in new_arrivals %}{% include "store/_product_card.html" %}{% endfor %}</div>
-</section>
-{% endif %}
 
 <section class="promise">
   <h2>Choose by note, not by guesswork</h2>
@@ -84,4 +53,23 @@
     </div>
   </form>
 </section>
+<script>
+(function(){
+  var grid=document.querySelector('[data-display-grid]'); if(!grid) return;
+  var cards=[].slice.call(grid.children), chips=document.querySelectorAll('[data-filter]'),
+      box=document.querySelector('[data-display-search]'), empty=document.querySelector('[data-display-empty]'), cat='all';
+  function apply(){
+    var q=(box.value||'').toLowerCase().trim(), n=0;
+    cards.forEach(function(c){
+      var ok=(cat==='all'||c.dataset.cat===cat)&&(!q||(c.dataset.name||'').indexOf(q)>-1);
+      c.hidden=!ok; if(ok) n++;
+    });
+    empty.hidden=n>0;
+  }
+  chips.forEach(function(b){b.addEventListener('click',function(){
+    cat=b.dataset.filter; chips.forEach(function(x){x.classList.toggle('is-on',x===b)}); apply();
+  })});
+  box.addEventListener('input',apply);
+})();
+</script>
 {% endblock %}

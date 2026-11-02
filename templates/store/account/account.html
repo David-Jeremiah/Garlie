@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load store_tags %}
+{% block title %}My account | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow-wide">
+  <div class="account-head">
+    {% if profile.photo %}<img class="avatar" src="{{ profile.photo.url }}" alt="">{% else %}<span class="avatar avatar-letter">{{ user.first_name|default:user.username|initial }}</span>{% endif %}
+    <div><h1>Hello, {{ user.first_name|default:user.username }}</h1><p class="muted">{{ user.email }}</p></div>
+    <form method="post" action="{% url 'account_logout' %}" class="account-logout">{% csrf_token %}<button class="btn btn-outline" type="submit">Log out</button></form>
+  </div>
+  <div class="account-grid">
+    <form method="post" enctype="multipart/form-data" class="form-stack">
+      {% csrf_token %}
+      <h2>My profile</h2>
+      {% for field in form %}<div class="field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="muted"><small>{{ field.help_text|safe }}</small></p>{% endif %}{% for e in field.errors %}<p class="form-error">{{ e }}</p>{% endfor %}</div>{% endfor %}
+      <button class="btn btn-dark" type="submit">Save profile</button>
+      <a class="btn btn-outline" href="{% url 'password_change' %}">Change password</a>
+    </form>
+    <div>
+      <h2>My orders</h2>
+      {% for o in orders %}
+        <a class="order-row" href="{% url 'account_order' o.number %}"><span><strong>{{ o.number }}</strong><br><small class="muted">{{ o.created|date:"j M Y" }}</small></span><span><span class="status status-{{ o.status }}">{{ o.get_status_display }}</span><br>{{ o.total|money }}</span></a>
+      {% empty %}<p class="muted">No orders yet. <a class="text-link" href="{% url 'shop' %}">Start shopping</a></p>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -6,6 +6,7 @@ def store(request):
     cart = Cart(request)
     site = SiteSettings.load()
     return {
+        "SITE": site,
         "STORE_NAME": site.store_name,
         "STORE_TAGLINE": site.tagline,
         "FREE_SHIPPING_THRESHOLD": site.free_shipping_threshold,

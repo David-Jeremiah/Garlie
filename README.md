@@ -64,3 +64,37 @@ store/management/commands/seed_store.py   demo data
 templates/     base + store pages
 static/        css/garlie.css, js/garlie.js
 ```
+
+
+## Editing the front page from the admin (new)
+
+Admin > Site settings now controls the words and pictures on the site:
+
+| What | Field |
+|---|---|
+| Logo (front-page box + footer) | Logo (empty = built-in Mr. Garil logo) |
+| Big attracting photo | Hero image |
+| "Whisper of Luxury" heading, text, button | Hero title / text / button text |
+| "Go-To Perfumes" display heading and line | Display title / text |
+| Top banner, footer text | Announcement text / Footer text |
+| Phone, email, city, delivery line, WhatsApp | Contact and orders |
+
+After pulling these changes run `python manage.py migrate` once.
+Add more perfumes in Admin > Products; every active product appears on the front page automatically.
+
+### Pages (About, Shipping, Returns, FAQ)
+
+Admin > Pages edits these pages (title, intro, text and an optional picture). In the text, start a line with `##` for a heading and leave a blank line between paragraphs. The About page shows the round Mr. Garil card picture by default; upload another image there to replace it. In the Shipping page, `{rates}` is replaced by the automatic shipping rates.
+The front-page hero picture is **Hero image** in Admin > Site settings; the browser-tab icon is **Favicon** there too.
+
+### Emails and WhatsApp
+
+- New orders and contact-form messages are emailed to the **Email** in Admin > Site settings (replying goes to the customer). Customers also get an order confirmation.
+- Orders open WhatsApp on the **WhatsApp number** in Site settings (if empty, the Phone number is used).
+- To send real emails, set these before starting the server (Gmail: turn on 2-step verification, create an "App password"):
+  `EMAIL_HOST_USER=you@gmail.com` and `EMAIL_HOST_PASSWORD=<app password>`. Without them emails only print in the terminal.
+
+### Customer accounts
+
+Customers can sign up (`/account/signup/`), log in (`/account/login/`), edit their profile (name, email, phone, address, photo), change their password and see their orders at `/account/`. The email is the login name. When a logged-in customer checks out, their details are pre-filled and the order is saved to their account. Staff can see and edit accounts in Admin > Users (each has a Profile section).
+Password reset by email is not included yet; staff can set a new password in Admin > Users.

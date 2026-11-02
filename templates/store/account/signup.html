@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Create account | {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="section narrow">
+  <h1>Create your account</h1>
+  <p class="lead">Save your details for faster checkout and see your orders in one place.</p>
+  <form method="post" class="form-stack">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% for field in form %}<div class="field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="muted"><small>{{ field.help_text|safe }}</small></p>{% endif %}{% for e in field.errors %}<p class="form-error">{{ e }}</p>{% endfor %}</div>{% endfor %}
+    <button class="btn btn-dark" type="submit">Create account</button>
+  </form>
+  <p class="muted">Already have an account? <a class="text-link" href="{% url 'account_login' %}">Log in</a></p>
+</section>
+{% endblock %}

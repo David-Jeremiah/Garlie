@@ -4,7 +4,11 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Category, Coupon, Order, Product, Variant
+from django.contrib.auth import get_user_model
+
+from .models import Category, Coupon, Order, Product, Profile, Variant
+
+User = get_user_model()
 
 
 class StoreTests(TestCase):
@@ -101,3 +105,62 @@ class StoreTests(TestCase):
         self.client.post(reverse("add_review", args=["bloom"]), {"name": "Z", "rating": 4, "body": "Lovely"})
         r = self.client.get(reverse("product", args=["bloom"]))
         self.assertEqual(r.context["product"].rating_count, 1)
+
+
+class AccountTests(TestCase):
+    def signup_data(self, **extra):
+        d = {"full_name": "Amaya T", "email": "Amaya@Example.com", "phone": "0700000000",
+             "password1": "S3cure-pass-77", "password2": "S3cure-pass-77"}
+        d.update(extra)
+        return d
+
+    def test_signup_logs_in_and_creates_profile(self):
+        r = self.client.post(reverse("signup"), self.signup_data())
+        self.assertRedirects(r, reverse("account"))
+        page = self.client.get(reverse("account"))
+        self.assertContains(page, "Hello, Amaya T")
+        user = Profile.objects.get().user
+        self.assertEqual(user.username, "amaya@example.com")
+        self.assertEqual(user.profile.phone, "0700000000")
+
+    def test_duplicate_email_rejected(self):
+        self.client.post(reverse("signup"), self.signup_data())
+        self.client.post(reverse("account_logout"))
+        r = self.client.post(reverse("signup"), self.signup_data(email="amaya@example.com"))
+        self.assertContains(r, "already exists")
+
+    def test_login_logout_and_profile_edit(self):
+        self.client.post(reverse("signup"), self.signup_data())
+        self.client.post(reverse("account_logout"))
+        self.assertRedirects(self.client.get(reverse("account")), reverse("account_login") + "?next=/account/")
+        r = self.client.post(reverse("account_login"), {"username": "AMAYA@example.com", "password": "S3cure-pass-77"})
+        self.assertRedirects(r, reverse("account"))
+        r = self.client.post(reverse("account"), {
+            "full_name": "Amaya Tumusiime", "email": "new@example.com", "phone": "0711", "address": "Plot 5",
+            "city": "Entebbe", "country": "Uganda"})
+        self.assertRedirects(r, reverse("account"))
+        user = Profile.objects.get().user
+        self.assertEqual((user.first_name, user.email, user.username, user.profile.city),
+                         ("Amaya Tumusiime", "new@example.com", "new@example.com", "Entebbe"))
+        self.client.post(reverse("account_logout"))
+        r = self.client.post(reverse("account_login"), {"username": "new@example.com", "password": "S3cure-pass-77"})
+        self.assertRedirects(r, reverse("account"))
+
+    def test_checkout_prefilled_and_order_linked(self):
+        cat = Category.objects.create(name="Oud", slug="oud")
+        prod = Product.objects.create(name="X", slug="x", category=cat)
+        var = Variant.objects.create(product=prod, size_ml=50, price=Decimal("50"), stock=5)
+        self.client.post(reverse("signup"), self.signup_data())
+        self.client.post(reverse("cart_add"), {"variant": var.pk, "qty": 1})
+        self.assertContains(self.client.get(reverse("checkout")), "amaya@example.com")
+        self.client.post(reverse("checkout"), {
+            "full_name": "Amaya T", "email": "amaya@example.com", "phone": "0700", "address": "Plot 1",
+            "city": "Kampala", "country": "Uganda", "payment_method": "cod"})
+        order = Order.objects.get()
+        self.assertEqual(order.user.email, "amaya@example.com")
+        self.assertContains(self.client.get(reverse("account")), order.number)
+        self.assertEqual(self.client.get(reverse("account_order", args=[order.number])).status_code, 200)
+        self.client.post(reverse("account_logout"))
+        other = User.objects.create_user("o@example.com", "o@example.com", "pw-12345-xyz")
+        self.client.force_login(other)
+        self.assertEqual(self.client.get(reverse("account_order", args=[order.number])).status_code, 404)

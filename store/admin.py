@@ -1,10 +1,14 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin
 
 from .models import (
     Category,
     ContactMessage,
     Coupon,
     Order,
+    Page,
+    Profile,
     OrderItem,
     Product,
     Review,
@@ -16,7 +20,13 @@ from .models import (
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
-    fields = ("store_name", "tagline", "free_shipping_threshold", "welcome_coupon", "whatsapp_number")
+    fieldsets = (
+        ("Store", {"fields": ("store_name", "tagline", "logo", "favicon")}),
+        ("Front page: photo and Whisper of Luxury box", {"fields": ("hero_image", "hero_title", "hero_text", "hero_button_text")}),
+        ("Front page: perfume display", {"fields": ("display_title", "display_text")}),
+        ("Banner and footer", {"fields": ("announcement_text", "footer_text", "free_shipping_threshold", "welcome_coupon")}),
+        ("Contact and orders", {"fields": ("whatsapp_number", "phone", "email", "location", "delivery_text")}),
+    )
 
     def has_add_permission(self, request):
         # Only one row ever exists.
@@ -78,7 +88,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ("number", "full_name", "status", "payment_method", "total", "created")
     list_filter = ("status", "payment_method", "created")
     search_fields = ("number", "full_name", "email", "phone")
-    readonly_fields = ("number", "subtotal", "discount", "shipping", "total", "coupon_code", "created", "updated")
+    readonly_fields = ("number", "user", "subtotal", "discount", "shipping", "total", "coupon_code", "created", "updated")
     inlines = [OrderItemInline]
     actions = ["mark_paid", "mark_shipped", "mark_delivered"]
 
@@ -118,3 +128,24 @@ class ContactMessageAdmin(admin.ModelAdmin):
     list_display = ("name", "email", "created", "handled")
     list_filter = ("handled",)
     list_editable = ("handled",)
+
+
+@admin.register(Page)
+class PageAdmin(admin.ModelAdmin):
+    list_display = ("title", "slug")
+    prepopulated_fields = {"slug": ("title",)}
+    fields = ("title", "slug", "intro", "body", "image")
+
+
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+
+
+admin.site.unregister(get_user_model())
+
+
+@admin.register(get_user_model())
+class CustomerUserAdmin(UserAdmin):
+    inlines = [ProfileInline]
+    list_display = ("username", "first_name", "email", "is_staff", "date_joined")

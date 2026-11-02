@@ -1,8 +1,8 @@
 {% load store_tags %}
-<article class="card">
+<article class="card" data-cat="{{ product.category.slug }}" data-name="{{ product.name|lower }} {{ product.category.name|lower }}">
   <a class="card-media" href="{{ product.get_absolute_url }}" style="--c: {{ product.color }}" aria-label="{{ product.name }}">
     {% if product.image %}<img src="{{ product.image.url }}" alt="{{ product.name }} perfume" loading="lazy">{% else %}{% bottle product %}{% endif %}
-    {% if product.is_new %}<span class="tag">New</span>{% endif %}
+    {% if product.is_new %}<span class="tag">New</span>{% elif product.is_bestseller %}<span class="tag">Best seller</span>{% endif %}
   </a>
   <div class="card-body">
     <p class="card-cat">{{ product.category.name }}</p>
